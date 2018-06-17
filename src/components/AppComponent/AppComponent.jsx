@@ -14,14 +14,19 @@ import TableCell from '@material-ui/core/TableCell';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
+import CircularProgress from '@material-ui/core/CircularProgress';
+
+import Integrations from '../../integration/integration';
 
 const CN = 'app';
 
 class AppComponent extends React.Component {
   state = {
+    students: [],
     activities: [],
     isEditModeOn: false,
-    isActivityModalOpen: false
+    isActivityModalOpen: false,
+    isSaving: false
   };
 
   _getActivities(students) {
@@ -31,37 +36,7 @@ class AppComponent extends React.Component {
         activities.indexOf(grade.title) === -1 && activities.push(grade.title);
       });
     });
-    this.setState({ activities });
-  }
-
-  _getStudents() {
-    return [
-      {
-        name: 'Uzumaki Naruto',
-        id: '2015112736',
-        grades: [{ id: '1', title: 'Prova 1', grade: '14', value: '20' }]
-      },
-      {
-        name: 'Uchiha Sasuke',
-        id: '2015112736',
-        grades: [{ id: '1', title: 'Prova 1', grade: '14', value: '20' }]
-      },
-      {
-        name: 'Haruno Sakura',
-        id: '2015112736',
-        grades: [{ id: '1', title: 'Prova 1', grade: '14', value: '20' }]
-      },
-      {
-        name: 'Suna no Gaara',
-        id: '2015112736',
-        grades: [{ id: '1', title: 'Prova 1', grade: '14', value: '20' }]
-      },
-      {
-        name: 'Nara Shikamaru',
-        id: '2015112736',
-        grades: [{ id: '1', title: 'Prova 1', grade: '14', value: '20' }]
-      }
-    ];
+    return activities;
   }
 
   _renderStudentCard(student, key) {
@@ -105,6 +80,19 @@ class AppComponent extends React.Component {
     ];
   }
 
+  _handleSaveStudentsData() {
+    this.setState({ isSaving: true });
+    Integrations.saveStudentsData(this.state.students)
+      .then(() => {
+        console.log('Saved data!');
+        this.setState({ isSaving: false });
+        this.getStudents();
+      })
+      .catch(error => {
+        this.setState({ isSaving: false, error });
+      });
+  }
+
   _renderSubHeader() {
     const { classes } = this.props;
     const { isEditModeOn } = this.state;
@@ -131,8 +119,9 @@ class AppComponent extends React.Component {
           disabled={isEditModeOn}
           style={{ backgroundColor: !isEditModeOn && green[500], color: 'white' }}
           className={classes.button}
+          onClick={this._handleSaveStudentsData.bind(this)}
         >
-          Salvar
+          {!this.state.isSaving ? <div>Salvar</div> : <CircularProgress style={{ color: 'white' }} size={20} />}
         </Button>
         <Typography variant="subheading" color="textSecondary" className={classes.contentTitle}>
           Alunos matriculados na disciplina - 2018/2
@@ -143,15 +132,14 @@ class AppComponent extends React.Component {
 
   _renderTable() {
     const { classes } = this.props;
-    const students = this._getStudents();
-
+    const { students, activities } = this.state;
     return (
       <Paper>
         <Table>
           <TableHead>
             <TableRow>
               <TableCell> Alunos </TableCell>
-              {this.state.activities.map((activityTitle, key) => <TableCell key={key}>{activityTitle}</TableCell>)}
+              {activities.map((activityTitle, key) => <TableCell key={key}>{activityTitle}</TableCell>)}
             </TableRow>
           </TableHead>
           <TableBody>{students.map(this._renderStudentCard.bind(this))}</TableBody>
@@ -162,7 +150,6 @@ class AppComponent extends React.Component {
 
   _addActitivyModal() {
     const { classes } = this.props;
-
     return (
       <Modal open={this.state.isActivityModalOpen} onClose={() => this.setState({ isActivityModalOpen: false })}>
         <div className={classes.modalContainer}>
@@ -184,7 +171,9 @@ class AppComponent extends React.Component {
                 variant="contained"
                 style={{ backgroundColor: green[500], color: 'white' }}
                 className={classes.button}
-                onClick={() => this.setState({ isActivityModalOpen: false })}
+                onClick={() => {
+                  this.setState({ isActivityModalOpen: false });
+                }}
               >
                 Salvar
               </Button>
@@ -195,9 +184,18 @@ class AppComponent extends React.Component {
     );
   }
 
+  getStudents() {
+    Integrations.getStudentsData()
+      .then(students => {
+        this.setState({ students, activities: this._getActivities(students) });
+      })
+      .catch(error => {
+        this.setState({ error: error });
+      });
+  }
+
   componentDidMount() {
-    const students = this._getStudents();
-    this._getActivities(students);
+    this.getStudents();
   }
 
   render() {
