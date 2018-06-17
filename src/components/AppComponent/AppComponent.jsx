@@ -26,7 +26,9 @@ class AppComponent extends React.Component {
     activities: [],
     isEditModeOn: false,
     isActivityModalOpen: false,
-    isSaving: false
+    isSaving: false,
+    activityName: '',
+    activityValue: 0
   };
 
   _getActivities(students) {
@@ -47,18 +49,48 @@ class AppComponent extends React.Component {
         <TableCell component="th" scope="row">
           {`(${student.id}) ${student.name}`}
         </TableCell>
-        {this._renderStudentGrades(student.grades)}
+        {this._renderStudentGrades(student.grades, student.name)}
       </TableRow>
     );
   }
 
-  _renderStudentGrades(grades) {
+  _changeStudeGrade(studentGrade, activityTitle, studentName) {
+    const students = this.state.students.slice();
+    // Didn't like this code that much, change it if I have time //
+    const newStudentsList = students.map(student => {
+      if (student.name === studentName) {
+        const newStudent = Object.assign({}, student);
+        newStudent.grades = newStudent.grades.map(activity => {
+          if (activity.title === activityTitle) {
+            return { ...activity, grade: studentGrade };
+          } else {
+            return activity;
+          }
+        });
+        return newStudent;
+      } else {
+        return student;
+      }
+    });
+
+    console.log('newStudentsList', newStudentsList);
+    this.setState({ students: newStudentsList });
+  }
+
+  _renderStudentGrades(grades, studentName) {
     const { classes } = this.props;
 
     return grades.map((grade, key) => {
       return (
         <TableCell key={key}>
-          <TextField disabled={!this.state.isEditModeOn} id={grade.id} label={grade.title} onChange={() => {}} />
+          <TextField
+            disabled={!this.state.isEditModeOn}
+            id={grade.id}
+            label={grade.title}
+            onChange={event => {
+              this._changeStudeGrade(event.target.value, grade.title, studentName);
+            }}
+          />
         </TableCell>
       );
     });
@@ -133,8 +165,9 @@ class AppComponent extends React.Component {
   _renderTable() {
     const { classes } = this.props;
     const { students, activities } = this.state;
+
     return (
-      <Paper>
+      <Paper className={classes.tableWrapper}>
         <Table>
           <TableHead>
             <TableRow>
@@ -148,6 +181,26 @@ class AppComponent extends React.Component {
     );
   }
 
+  _handleAddActivity() {
+    const { activityName, activityValue, students, activities } = this.state;
+    const studentsList = students.slice();
+    const activitiesList = activities.slice();
+
+    studentsList.map(student => {
+      const newStudent = Object.assign({}, student);
+      newStudent.grades && newStudent.grades.push({ title: activityName, grade: 0, value: activityValue });
+      return newStudent;
+    });
+
+    activitiesList.push(activityName);
+
+    this.setState({
+      students: studentsList,
+      activities: activitiesList,
+      isActivityModalOpen: false
+    });
+  }
+
   _addActitivyModal() {
     const { classes } = this.props;
     return (
@@ -157,8 +210,20 @@ class AppComponent extends React.Component {
             <Typography className={classes.modalTitle} variant="title">
               Adicione uma Atividade
             </Typography>
-            <TextField className={classes.modalTextField} id="activity" label="Nome da Atividade" onChange={() => {}} />
-            <TextField className={classes.modalTextField} id="value" label="Valor" onChange={() => {}} />
+            <TextField
+              className={classes.modalTextField}
+              id="activity"
+              label="Nome da Atividade"
+              onChange={event => this.setState({ activityName: event.target.value })}
+            />
+            <TextField
+              className={classes.modalTextField}
+              id="value"
+              label="Valor"
+              onChange={event => {
+                this.setState({ activityValue: event.target.value });
+              }}
+            />
             <div className={classes.modalFooter}>
               <Button
                 variant="outlined"
@@ -171,9 +236,7 @@ class AppComponent extends React.Component {
                 variant="contained"
                 style={{ backgroundColor: green[500], color: 'white' }}
                 className={classes.button}
-                onClick={() => {
-                  this.setState({ isActivityModalOpen: false });
-                }}
+                onClick={this._handleAddActivity.bind(this)}
               >
                 Salvar
               </Button>
@@ -312,6 +375,10 @@ const styles = theme => ({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: '24px'
+  },
+  tableWrapper: {
+    overflowX: 'auto',
+    paddingBottom: '20px'
   }
 });
 

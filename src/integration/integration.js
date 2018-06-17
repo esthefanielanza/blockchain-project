@@ -4,27 +4,27 @@ function getStudentsData() {
       {
         name: 'Uzumaki Naruto',
         id: '2015112736',
-        grades: [{ id: '1', title: 'Prova 1', grade: '14', value: '20' }]
+        grades: [{ title: 'Prova 1', grade: '14', value: '20' }]
       },
       {
         name: 'Uchiha Sasuke',
         id: '2015112736',
-        grades: [{ id: '1', title: 'Prova 1', grade: '14', value: '20' }]
+        grades: [{ title: 'Prova 1', grade: '14', value: '20' }]
       },
       {
         name: 'Haruno Sakura',
         id: '2015112736',
-        grades: [{ id: '1', title: 'Prova 1', grade: '14', value: '20' }]
+        grades: [{ title: 'Prova 1', grade: '14', value: '20' }]
       },
       {
         name: 'Suna no Gaara',
         id: '2015112736',
-        grades: [{ id: '1', title: 'Prova 1', grade: '14', value: '20' }]
+        grades: [{ title: 'Prova 1', grade: '14', value: '20' }]
       },
       {
         name: 'Nara Shikamaru',
         id: '2015112736',
-        grades: [{ id: '1', title: 'Prova 1', grade: '14', value: '20' }]
+        grades: [{ title: 'Prova 1', grade: '14', value: '20' }]
       }
     ];
 
