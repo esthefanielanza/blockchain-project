@@ -15,6 +15,8 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
 import CircularProgress from '@material-ui/core/CircularProgress';
+// import Class from '../../../build/contracts/Class.json'
+import getWeb3 from '../../utils/getWeb3'
 
 import Integrations from '../../integration/integration';
 
@@ -32,6 +34,23 @@ class AppComponent extends React.Component {
     activityValue: 0,
     teacher: ''
   };
+
+  componentWillMount() {
+    getWeb3.then(results => {
+      this.setState({
+        web3: results.web3
+      });
+
+      // Instantiate contracts here
+      this._instantiateContracts();
+    }).catch(() => {
+        console.log('Error finding web3.');
+    })
+  }
+
+  _instantiateContracts() {
+    // Instantiate contracts here
+  }
 
   _getActivities(students) {
     const activities = [];
