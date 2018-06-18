@@ -1,3 +1,14 @@
+function getTeacherData() {
+  return new Promise((resolve, reject) => {
+    const teacher = {
+      name: 'Hatake Kakashi',
+      subject: 'Introduction to Ninja Science'
+    };
+
+    resolve(teacher);
+  });
+}
+
 function getStudentsData() {
   return new Promise((resolve, reject) => {
     const students = [
@@ -44,5 +55,6 @@ function saveStudentsData(students) {
 
 export default {
   getStudentsData,
-  saveStudentsData
+  saveStudentsData,
+  getTeacherData
 };

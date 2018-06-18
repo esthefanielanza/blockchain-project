@@ -26,9 +26,11 @@ class AppComponent extends React.Component {
     activities: [],
     isEditModeOn: false,
     isActivityModalOpen: false,
+    isStudentModalOpen: false,
     isSaving: false,
     activityName: '',
-    activityValue: 0
+    activityValue: 0,
+    teacher: ''
   };
 
   _getActivities(students) {
@@ -103,8 +105,8 @@ class AppComponent extends React.Component {
       <div className={classes.headerContainer}>
         <CardHeader
           className={classes.cardHeader}
-          title="Professor Jeroen Van De Graff"
-          subheader="Blockchain e Criptomoedas"
+          title={this.state.teacher.name}
+          subheader={this.state.teacher.subject}
         />
         <img className={classes.logo} src="https://www.ufmg.br/online/arquivos/anexos/UFMG%20marca%20nova.JPG" />
       </div>,
@@ -201,6 +203,11 @@ class AppComponent extends React.Component {
     });
   }
 
+  _handleAddStudent() {
+    console.log('adding student', this.state.studentName);
+    this.setState({ isStudentModalOpen: false });
+  }
+
   _addActitivyModal() {
     const { classes } = this.props;
     return (
@@ -247,7 +254,45 @@ class AppComponent extends React.Component {
     );
   }
 
-  getStudents() {
+  _addStudentModal() {
+    const { classes } = this.props;
+    return (
+      <Modal open={this.state.isStudentModalOpen} onClose={() => this.setState({ isStudentModalOpen: false })}>
+        <div className={classes.modalContainer}>
+          <Paper className={classes.modal}>
+            <Typography className={classes.modalTitle} variant="title">
+              Adicione um Novo Aluno
+            </Typography>
+            <TextField
+              className={classes.modalTextField}
+              id="activity"
+              label="Nome do Aluno"
+              onChange={event => this.setState({ studentName: event.target.value })}
+            />
+            <div className={classes.modalFooter}>
+              <Button
+                variant="outlined"
+                className={classes.button}
+                onClick={() => this.setState({ isStudentModalOpen: false })}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="contained"
+                style={{ backgroundColor: green[500], color: 'white' }}
+                className={classes.button}
+                onClick={this._handleAddStudent.bind(this)}
+              >
+                Salvar
+              </Button>
+            </div>
+          </Paper>
+        </div>
+      </Modal>
+    );
+  }
+
+  _getStudents() {
     Integrations.getStudentsData()
       .then(students => {
         this.setState({ students, activities: this._getActivities(students) });
@@ -258,7 +303,14 @@ class AppComponent extends React.Component {
   }
 
   componentDidMount() {
-    this.getStudents();
+    Integrations.getTeacherData()
+      .then(teacher => {
+        this.setState({ teacher });
+        this._getStudents();
+      })
+      .catch(error => {
+        this.setState({ error: error });
+      });
   }
 
   render() {
@@ -273,11 +325,20 @@ class AppComponent extends React.Component {
             <CardContent className={classes.cardContent}>{this._renderTable()}</CardContent>
           </Card>
         </div>
-        <Button className={classes.fabButton} variant="fab" color="primary" aria-label="Adicionar Aluno">
+        <Button
+          className={classes.fabButton}
+          variant="fab"
+          color="primary"
+          aria-label="Adicionar Aluno"
+          onClick={() => {
+            this.setState({ isStudentModalOpen: true });
+          }}
+        >
           <AddIcon />
         </Button>
 
         {this._addActitivyModal()}
+        {this._addStudentModal()}
       </div>
     );
   }
