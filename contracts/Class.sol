@@ -11,7 +11,7 @@ contract Class is Ownable {
     struct Student {
         address addr;
         bytes32 name;
-        uint[] grades;
+        mapping (uint => uint) grades;
     }
 
     struct Assignment {
@@ -79,11 +79,11 @@ contract Class is Ownable {
         assignments.push(assignment);
     }
 
-    function gradeAssignment(address addr, uint assignment, uint grade) public
-      onlyOwner
-      validStudent(addr)
-      validAssignment(assignment)
-      validAssignmentGrade(assignment, grade) {
+    function gradeAssignment(address addr, uint assignment, uint grade) public {
+      // onlyOwner
+      // validStudent(addr)
+      // validAssignment(assignment)
+      // validAssignmentGrade(assignment, grade) {
         uint idx = studentAddressToIdx[addr] - 1;
 
         Student storage student = students[idx];
