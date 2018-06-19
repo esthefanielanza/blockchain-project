@@ -5,38 +5,69 @@ contract Class is Ownable {
 
     // @todo This is a draft that needs to be worked on.
 
-    struct Assignment {
-        uint id;
+    struct Student {
+        address addr;
         bytes32 name;
+        uint[] grades;
     }
 
-    mapping (address => bool) students;
-    mapping (uint => Assignment) assignments;
-
-    modifier validStudent(uint student) {
-        // Check student existance
-        _
+    struct Assignment {
+        bytes32 name;
+        uint value;
     }
 
-    modifier validAssignment(uint assignment) {
-        // Check bounds for assignment
-        _
+    mapping (address => uint) studentAddressToIdx;
+    Student[] students;
+    Assignment[] assignments;
+
+    modifier validStudent(address addr) {
+        require(studentAddressToIdx[addr] != 0);
+        _;
+    }
+
+    modifier validAssignment(uint id) {
+        require(id < assignments.length);
+        _;
     }
 
     modifier validAssignmentGrade(uint assignment, uint grade) {
-        // Check bounds for assignment
-        _
+        require(grade >= 0 && grade <= assignments[assignment].value);
+        _;
     }
 
-    function addAssignment(bytes32 name) {
-        // Add assignment
+    modifier validGrade(uint grade) {
+        require(grade >= 0 && grade <= 100);
+        _;
     }
 
-    function gradeAssignment(address student, uint assignment, uint grade) public
+    function getStudent(address addr) public view
+      validStudent(addr)
+      returns (bytes32 name, uint[] grades) {
+        Student storage student = students[studentAddressToIdx[addr]];
+        return (student.name, student.grades);
+    }
+
+    function addStudent(bytes32 name, address addr) public onlyOwner {
+        Student memory student;
+        student.name = name;
+        student.addr = addr;
+        students.push(student);
+        studentAddressToIdx[addr] = students.length;
+    }
+
+    function addAssignment(bytes32 name, uint value) public validGrade(value) {
+        Assignment memory assignment = Assignment({name: name, value: value});
+        assignments.push(assignment);
+    }
+
+    function gradeAssignment(address addr, uint assignment, uint grade) public
       onlyOwner
-      validStudent(student)
-      validAssignment(assignment) 
+      validStudent(addr)
+      validAssignment(assignment)
       validAssignmentGrade(assignment, grade) {
-        // Something
+        uint idx = studentAddressToIdx[addr] - 1;
+
+        Student storage student = students[idx];
+        student.grades[assignment] = grade;
     }
 }
