@@ -54,7 +54,7 @@ contract Class is Ownable {
     function getStudent(address addr) public view
       validStudent(addr)
       returns (bytes32, uint[]) {
-        Student storage student = students[studentAddressToIdx[addr]];
+        Student storage student = students[studentAddressToIdx[addr] - 1];
         return (student.name, student.grades);
     }
 
