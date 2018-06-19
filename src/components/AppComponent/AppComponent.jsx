@@ -15,7 +15,7 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
 import CircularProgress from '@material-ui/core/CircularProgress';
-// import Class from '../../../build/contracts/Class.json'
+import ClassContract from '../../../build/contracts/Class.json'
 import getWeb3 from '../../utils/getWeb3'
 
 import Integrations from '../../integration/integration';
@@ -47,7 +47,29 @@ class AppComponent extends React.Component {
   }
 
   _instantiateContracts() {
-    // Instantiate contracts here
+    const contract = require('truffle-contract');
+    const classContract = contract(ClassContract);
+    classContract.setProvider(this.state.web3.currentProvider);
+
+    // Declaring this for later so we can chain functions on SimpleStorage.
+    var classContractInstance;
+
+    // Get accounts.
+    this.state.web3.eth.getAccounts((error, accounts) => {
+      classContract.deployed().then((instance) => {
+        classContractInstance = instance;
+        console.log(instance);
+
+        // @Todo colocar a linha seguinte no modal de adicionar student.
+        instance.addStudent("Marzano", "0xbB77B62bda8bD4fA9375eE00F3114249eBe4AfDE", {from: accounts[0]});
+
+        // How to call view functions? console.log(instance.getStudent);
+      }).then((result) => {
+          // Do additional stuffs
+      }).then((result) => {
+          // Do additional stuffs
+      })
+    })
   }
 
   _getActivities(students) {

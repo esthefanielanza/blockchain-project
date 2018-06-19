@@ -41,18 +41,22 @@ contract Class is Ownable {
     }
 
     function getStudent(address addr) public view
-      validStudent(addr)
+      // validStudent(addr)
       returns (bytes32 name, uint[] grades) {
         Student storage student = students[studentAddressToIdx[addr]];
         return (student.name, student.grades);
     }
 
-    function addStudent(bytes32 name, address addr) public onlyOwner {
+    function addStudent(bytes32 name, address addr) public onlyOwner
+      returns (uint) {
         Student memory student;
         student.name = name;
         student.addr = addr;
+
         students.push(student);
         studentAddressToIdx[addr] = students.length;
+
+        return studentAddressToIdx[addr] - 1;
     }
 
     function addAssignment(bytes32 name, uint value) public validGrade(value) {
