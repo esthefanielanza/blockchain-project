@@ -34,7 +34,7 @@ contract Class is Ownable {
     }
 
     modifier validAssignmentGrade(uint assignment, uint grade) {
-        require(grade >= 0 && grade <= assignments[assignment].value);
+        require(grade <= assignments[assignment].value);
         _;
     }
 
