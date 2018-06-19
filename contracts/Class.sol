@@ -21,8 +21,6 @@ contract Class is Ownable {
     Student[] public students;
     Assignment[] public assignments;
 
-    
-
     modifier validStudent(address addr) {
         require(studentAddressToIdx[addr] != 0);
         _;
