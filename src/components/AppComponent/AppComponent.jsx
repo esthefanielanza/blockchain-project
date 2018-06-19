@@ -343,7 +343,7 @@ class AppComponent extends React.Component {
                 className={classes.button}
                 onClick={this._handleAddStudent.bind(this)}
               >
-                Salvar
+                {!this.state.isAddStudentLoading ? 'Salvar' : <CircularProgress style={{ color: 'white' }} size={20} />}
               </Button>
             </div>
           </Paper>
