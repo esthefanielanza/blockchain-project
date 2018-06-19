@@ -47,10 +47,11 @@ contract Class is Ownable {
 
     modifier validGradeTotal(uint grade) {
         uint gradeTotal = 0;
-        for(uint i= 0; i < assignments.length; i++){
-           gradeTotal = gradeTotal = assignments[i].value;
+        for(uint i = 0; i < assignments.length; i++){
+           gradeTotal += assignments[i].value;
         }
-        require(gradeTotal >= 0 && gradeTotal <= 10000);
+
+        require(gradeTotal + grade <= 10000);
         _;
     }
 
