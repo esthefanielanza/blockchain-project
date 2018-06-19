@@ -46,7 +46,6 @@ contract Class is Ownable {
         _;
     }
 
-    
     function getNumberOfStudents() public view
       returns (uint) {
         return students.length;
@@ -89,11 +88,12 @@ contract Class is Ownable {
       onlyOwner
       validGrade(value)
       returns (uint) {
-        gradeTotal+= value;
         Assignment memory assignment = Assignment({name: name, value: value});
         assignments.push(assignment);
 
+        gradeTotal += value;
         emit AddedAssignment(assignments.length - 1, name, value);
+
         return assignments.length - 1;
     }
 
