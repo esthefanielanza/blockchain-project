@@ -17,9 +17,18 @@ contract Class is Ownable {
         uint value;
     }
 
+    bytes32 className;
+    bytes32 teacherName;
+
     mapping (address => uint) public studentAddressToIdx;
     Student[] public students;
     Assignment[] public assignments;
+    uint public gradeTotal;
+
+    constructor(bytes32 class, bytes32 teacher) public {
+        className = class;
+        teacherName = teacher;
+    }
 
     event AddedStudent(bytes32 name, address addr);
     event AddedAssignment(uint id, bytes32 name, uint value);
@@ -27,6 +36,11 @@ contract Class is Ownable {
 
     modifier validStudent(address addr) {
         require(studentAddressToIdx[addr] != 0);
+        _;
+    }
+
+    modifier studentDoesNotExist(address student) {
+        require(studentAddressToIdx[student] == 0);
         _;
     }
 
@@ -41,17 +55,7 @@ contract Class is Ownable {
     }
 
     modifier validGrade(uint grade) {
-        require(grade >= 0 && grade <= 10000);
-        _;
-    }
-
-    modifier validGradeTotal(uint grade) {
-        uint gradeTotal = 0;
-        for(uint i = 0; i < assignments.length; i++){
-           gradeTotal += assignments[i].value;
-        }
-
-        require(gradeTotal + grade <= 10000);
+        require(grade >= 0 && grade + gradeTotal <= 10000);
         _;
     }
 
@@ -81,6 +85,7 @@ contract Class is Ownable {
 
     function addStudent(bytes32 name, address addr) public
       onlyOwner
+      studentDoesNotExist(addr)
       returns (uint) {
         Student memory student;
         student.name = name;
@@ -96,12 +101,13 @@ contract Class is Ownable {
     function addAssignment(bytes32 name, uint value) public
       onlyOwner
       validGrade(value)
-      validGradeTotal(value)
       returns (uint) {
         Assignment memory assignment = Assignment({name: name, value: value});
         assignments.push(assignment);
 
+        gradeTotal += value;
         emit AddedAssignment(assignments.length - 1, name, value);
+
         return assignments.length - 1;
     }
 
