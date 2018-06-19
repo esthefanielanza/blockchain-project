@@ -6,7 +6,6 @@ contract Class is Ownable {
     // @todo This is a draft that needs to be worked on.
     // @todo Make sure all teacher methods have onlyOwner!!!
 
-    
     struct Student {
         address addr;
         bytes32 name;
@@ -26,12 +25,11 @@ contract Class is Ownable {
     Assignment[] public assignments;
     uint public gradeTotal;
 
-    function Class(bytes32 class, bytes32 teacher) 
-    constructor {
+    constructor(bytes32 class, bytes32 teacher) public {
         className = class;
         teacherName = teacher;
     }
-    
+
     event AddedStudent(bytes32 name, address addr);
     event AddedAssignment(uint id, bytes32 name, uint value);
     event GradedAssignment(address addr, uint assignment, uint grade);
