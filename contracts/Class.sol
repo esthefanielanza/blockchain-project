@@ -6,6 +6,7 @@ contract Class is Ownable {
     // @todo This is a draft that needs to be worked on.
     // @todo Add check to addAssignment to make sure sum(assignment grades) <= 100
     // @todo Allow grades between 0 and 10000, then do /100 in front
+    // @todo Make sure all teacher methods have onlyOwner!!!
 
     struct Student {
         address addr;
