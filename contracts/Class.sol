@@ -31,6 +31,11 @@ contract Class is Ownable {
         _;
     }
 
+    modifier studentDoesNotExist(address student) {
+        require(studentAddressToIdx[student] == 0);
+        _;
+    }
+
     modifier validAssignment(uint id) {
         require(id < assignments.length);
         _;
@@ -72,6 +77,7 @@ contract Class is Ownable {
 
     function addStudent(bytes32 name, address addr) public
       onlyOwner
+      studentDoesNotExist(addr)
       returns (uint) {
         Student memory student;
         student.name = name;
