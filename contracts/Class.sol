@@ -20,6 +20,7 @@ contract Class is Ownable {
     mapping (address => uint) public studentAddressToIdx;
     Student[] public students;
     Assignment[] public assignments;
+    uint public gradeTotal;
 
     modifier validStudent(address addr) {
         require(studentAddressToIdx[addr] != 0);
@@ -37,20 +38,11 @@ contract Class is Ownable {
     }
 
     modifier validGrade(uint grade) {
-        require(grade >= 0 && grade <= 10000);
+        require(grade >= 0 && grade + gradeTotal <= 10000);
         _;
     }
 
-    modifier validGradeTotal(uint grade) {
-        uint gradeTotal = 0;
-        for(uint i = 0; i < assignments.length; i++){
-           gradeTotal += assignments[i].value;
-        }
-
-        require(gradeTotal + grade <= 10000);
-        _;
-    }
-
+    
     function getNumberOfStudents() public view
       returns (uint) {
         return students.length;
@@ -90,8 +82,8 @@ contract Class is Ownable {
 
     function addAssignment(bytes32 name, uint value) public
       onlyOwner
-      validGrade(value)
-      validGradeTotal(value) {
+      validGrade(value) {
+        gradeTotal+= value
         Assignment memory assignment = Assignment({name: name, value: value});
         assignments.push(assignment);
     }
