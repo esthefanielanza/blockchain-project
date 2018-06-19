@@ -41,6 +41,16 @@ contract Class is Ownable {
         _;
     }
 
+    function getNumberOfStudents() public view
+      returns (uint) {
+        return students.length;
+    }
+
+    function getNumberOfAssignments() public view
+      returns (uint) {
+        return assignments.length;
+    }
+
     function getStudent(address addr) public view
       validStudent(addr)
       returns (bytes32 name, uint[] grades) {
