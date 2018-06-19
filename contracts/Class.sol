@@ -91,6 +91,7 @@ contract Class is Ownable {
     }
 
     function addAssignment(bytes32 name, uint value) public
+      onlyOwner
       validGrade(value)
       validGradeTotal(value) {
         Assignment memory assignment = Assignment({name: name, value: value});
