@@ -41,7 +41,6 @@ class AppComponent extends React.Component {
         web3: results.web3
       });
 
-      // Instantiate contracts here
       this._instantiateContracts();
     }).catch(() => {
         console.log('Error finding web3.');
@@ -53,7 +52,6 @@ class AppComponent extends React.Component {
     const classContract = contract(ClassContract);
     classContract.setProvider(this.state.web3.currentProvider);
 
-    // Declaring this for later so we can chain functions on SimpleStorage.
     var classContractInstance;
 
     // Get accounts.

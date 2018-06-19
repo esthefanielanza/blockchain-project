@@ -16,9 +16,9 @@ contract Class is Ownable {
         uint value;
     }
 
-    mapping (address => uint) studentAddressToIdx;
-    Student[] students;
-    Assignment[] assignments;
+    mapping (address => uint) public studentAddressToIdx;
+    Student[] public students;
+    Assignment[] public assignments;
 
     modifier validStudent(address addr) {
         require(studentAddressToIdx[addr] != 0);
