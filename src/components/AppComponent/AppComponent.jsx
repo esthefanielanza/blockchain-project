@@ -19,6 +19,7 @@ import ClassContract from '../../../build/contracts/Class.json';
 import getWeb3 from '../../utils/getWeb3';
 
 import Integrations from '../../integration/integration';
+import { rejects } from 'assert';
 
 const CN = 'app';
 
@@ -35,22 +36,30 @@ class AppComponent extends React.Component {
     studentName: '',
     studentAddress: '',
     accounts: [],
-    teacher: ''
+    teacher: '',
+    isLoadingStudents: true,
+    instance: undefined
   };
 
-  componentWillMount() {
+  // -------------------- React Lifecycle -------------------- //
+
+  componentDidMount() {
+    console.log('component didd mount');
     getWeb3
       .then(results => {
+        console.log('results', results);
         this.setState({
           web3: results.web3
         });
-
         this._instantiateContracts(web3);
       })
       .catch(err => {
+        console.log('err', err);
         console.log('Error finding web3.', err);
       });
   }
+
+  // -------------------- Contracts Integration -------------------- //
 
   _instantiateContracts() {
     const contract = require('truffle-contract');
@@ -59,15 +68,32 @@ class AppComponent extends React.Component {
 
     var classContractInstance;
     // Get accounts.
+    console.log('getting accounts', classContract);
     this.state.web3.eth.getAccounts((error, accounts) => {
+      console.log('got accounts', accounts);
       classContract
         .deployed()
         .then(instance => {
+          console.log('Initiate Contract Success');
           classContractInstance = instance;
+          this._getStudents(instance);
+
+          var addedStudentEvent = instance.AddedStudent();
+
+          console.log('addedStudentEvent', addedStudentEvent);
+          // watch for changes
+          addedStudentEvent.watch((error, result) => {
+            if (!error && result) {
+              this._getStudents(instance);
+              console.log(error);
+            }
+          });
+
           this.setState({ accounts, instance });
           // How to call view functions? console.log(instance.getStudent);
         })
         .catch(error => {
+          console.log('Initiate Contract Error', error);
           this.setState({ error });
         });
     });
@@ -83,7 +109,7 @@ class AppComponent extends React.Component {
       .addStudent(studentName, studentAddress, { from: accounts[0] })
       .then(res => {
         console.log('Added Student Res', res);
-        this.setState({ isAddStudentLoading: false, isStudentModalOpen: false });
+        this.setState({ isAddStudentLoading: false, isStudentModalOpen: false, isLoadingStudents: true });
         // We need to call get students again after we add a new student! //
       })
       .catch(error => {
@@ -100,19 +126,6 @@ class AppComponent extends React.Component {
       });
     });
     return activities;
-  }
-
-  _renderStudentCard(student, key) {
-    const { classes } = this.props;
-
-    return (
-      <TableRow className={classes.studentCard} key={key}>
-        <TableCell component="th" scope="row">
-          {`(${student.id}) ${student.name}`}
-        </TableCell>
-        {this._renderStudentGrades(student.grades, student.name)}
-      </TableRow>
-    );
   }
 
   _changeStudeGrade(studentGrade, activityTitle, studentName) {
@@ -136,6 +149,55 @@ class AppComponent extends React.Component {
 
     console.log('newStudentsList', newStudentsList);
     this.setState({ students: newStudentsList });
+  }
+
+  _handleSaveStudentsData() {
+    this.setState({ isSaving: true });
+    Integrations.saveStudentsData(this.state.students)
+      .then(() => {
+        console.log('Saved data!');
+        this.setState({ isSaving: false });
+      })
+      .catch(error => {
+        this.setState({ isSaving: false, error });
+      });
+  }
+
+  // -------------------- Handle Front Data -------------------- //
+
+  _handleAddActivity() {
+    const { activityName, activityValue, students, activities } = this.state;
+    const studentsList = students.slice();
+    const activitiesList = activities.slice();
+
+    studentsList.map(student => {
+      const newStudent = Object.assign({}, student);
+      newStudent.grades && newStudent.grades.push({ title: activityName, grade: 0, value: activityValue });
+      return newStudent;
+    });
+
+    activitiesList.push(activityName);
+
+    this.setState({
+      students: studentsList,
+      activities: activitiesList,
+      isActivityModalOpen: false
+    });
+  }
+
+  // -------------------- Render Functions -------------------- //
+
+  _renderStudentCard(student, key) {
+    const { classes } = this.props;
+
+    return (
+      <TableRow className={classes.studentCard} key={key}>
+        <TableCell component="th" scope="row">
+          {student.name}
+        </TableCell>
+        {/* {this._renderStudentGrades(student.grades, student.name)} */}
+      </TableRow>
+    );
   }
 
   _renderStudentGrades(grades, studentName) {
@@ -171,19 +233,6 @@ class AppComponent extends React.Component {
       </div>,
       <div className={classes.line} />
     ];
-  }
-
-  _handleSaveStudentsData() {
-    this.setState({ isSaving: true });
-    Integrations.saveStudentsData(this.state.students)
-      .then(() => {
-        console.log('Saved data!');
-        this.setState({ isSaving: false });
-        this.getStudents();
-      })
-      .catch(error => {
-        this.setState({ isSaving: false, error });
-      });
   }
 
   _renderSubHeader() {
@@ -225,44 +274,32 @@ class AppComponent extends React.Component {
 
   _renderTable() {
     const { classes } = this.props;
-    const { students, activities } = this.state;
+    const { students, activities, isLoadingStudents } = this.state;
 
-    return (
-      <Paper className={classes.tableWrapper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell> Alunos </TableCell>
-              {activities.map((activityTitle, key) => <TableCell key={key}>{activityTitle}</TableCell>)}
-            </TableRow>
-          </TableHead>
-          <TableBody>{students.map(this._renderStudentCard.bind(this))}</TableBody>
-        </Table>
-      </Paper>
-    );
+    if (isLoadingStudents) {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <CircularProgress style={{ color: green[500] }} size={200} />
+        </div>
+      );
+    } else {
+      return (
+        <Paper className={classes.tableWrapper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell> Alunos </TableCell>
+                {/* {activities.map((activityTitle, key) => <TableCell key={key}>{activityTitle}</TableCell>)} */}
+              </TableRow>
+            </TableHead>
+            <TableBody>{students.map(this._renderStudentCard.bind(this))}</TableBody>
+          </Table>
+        </Paper>
+      );
+    }
   }
 
-  _handleAddActivity() {
-    const { activityName, activityValue, students, activities } = this.state;
-    const studentsList = students.slice();
-    const activitiesList = activities.slice();
-
-    studentsList.map(student => {
-      const newStudent = Object.assign({}, student);
-      newStudent.grades && newStudent.grades.push({ title: activityName, grade: 0, value: activityValue });
-      return newStudent;
-    });
-
-    activitiesList.push(activityName);
-
-    this.setState({
-      students: studentsList,
-      activities: activitiesList,
-      isActivityModalOpen: false
-    });
-  }
-
-  _addActitivyModal() {
+  _renderAddActitivyModal() {
     const { classes } = this.props;
     return (
       <Modal open={this.state.isActivityModalOpen} onClose={() => this.setState({ isActivityModalOpen: false })}>
@@ -308,7 +345,7 @@ class AppComponent extends React.Component {
     );
   }
 
-  _addStudentModal() {
+  _renderAddStudentModal() {
     const { classes } = this.props;
     return (
       <Modal open={this.state.isStudentModalOpen} onClose={() => this.setState({ isStudentModalOpen: false })}>
@@ -352,28 +389,44 @@ class AppComponent extends React.Component {
     );
   }
 
-  _getStudents() {
-    Integrations.getStudentsData()
-      .then(students => {
-        this.setState({ students, activities: this._getActivities(students) });
-      })
-      .catch(error => {
-        this.setState({ error: error });
-      });
-  }
+  _getStudents(instance) {
+    console.log('GETTING STUDENTS!!!!');
+    return new Promise((resolve, reject) => {
+      const promises = [];
+      const students = [];
 
-  componentDidMount() {
-    Integrations.getTeacherData()
-      .then(teacher => {
-        this.setState({ teacher });
-        this._getStudents();
-      })
-      .catch(error => {
-        this.setState({ error: error });
-      });
+      instance
+        .getNumberOfStudents()
+        .then(n => {
+          for (let i = 0; i < n; i++) {
+            promises.push(
+              instance
+                .students(i)
+                .then(student => {
+                  const studentName = web3.toAscii(student[1]).replace(/\u0000/g, '');
+                  students.push({ address: student[0], name: studentName });
+                })
+                .catch(error => {
+                  this.setState({ error });
+                  console.log('Get Student Error', error);
+                })
+            );
+          }
+
+          Promise.all(promises)
+            .then(() => {
+              console.log('GOT ALL STUDENTS!!!');
+              this.setState({ students, isLoadingStudents: false });
+              resolve();
+            })
+            .catch(reject);
+        })
+        .catch(error => this.setState({ error }));
+    });
   }
 
   render() {
+    console.log('render');
     const { classes } = this.props;
 
     return (
@@ -397,12 +450,14 @@ class AppComponent extends React.Component {
           <AddIcon />
         </Button>
 
-        {this._addActitivyModal()}
-        {this._addStudentModal()}
+        {this._renderAddActitivyModal()}
+        {this._renderAddStudentModal()}
       </div>
     );
   }
 }
+
+// -------------------- Styling -------------------- //
 
 const styles = theme => ({
   root: {
