@@ -4,13 +4,12 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 contract Class is Ownable {
 
     // @todo This is a draft that needs to be worked on.
-    // @todo Add check to addAssignment to make sure sum(assignment grades) <= 100
-    // @todo Allow grades between 0 and 10000, then do /100 in front
+    // @todo Make sure all teacher methods have onlyOwner!!!
 
     struct Student {
         address addr;
         bytes32 name;
-        uint[] grades;
+        mapping (uint => uint) grades;
     }
 
     struct Assignment {
@@ -33,12 +32,22 @@ contract Class is Ownable {
     }
 
     modifier validAssignmentGrade(uint assignment, uint grade) {
-        require(grade >= 0 && grade <= assignments[assignment].value);
+        require(grade <= assignments[assignment].value);
         _;
     }
 
     modifier validGrade(uint grade) {
         require(grade >= 0 && grade <= 10000);
+        _;
+    }
+
+    modifier validGradeTotal(uint grade) {
+        uint gradeTotal = 0;
+        for(uint i = 0; i < assignments.length; i++){
+           gradeTotal += assignments[i].value;
+        }
+
+        require(gradeTotal + grade <= 10000);
         _;
     }
 
@@ -56,7 +65,14 @@ contract Class is Ownable {
       validStudent(addr)
       returns (bytes32, uint[]) {
         Student storage student = students[studentAddressToIdx[addr] - 1];
-        return (student.name, student.grades);
+
+        // Grades is a mapping. We convert to array to return its' values.
+        uint[] gradesArray;
+        for (uint i = 0; i < assignments.length; i++) {
+            gradesArray.push(student.grades[i]);
+        }
+
+        return (student.name, gradesArray);
     }
 
     function addStudent(bytes32 name, address addr) public
@@ -73,7 +89,9 @@ contract Class is Ownable {
     }
 
     function addAssignment(bytes32 name, uint value) public
-      validGrade(value) {
+      onlyOwner
+      validGrade(value)
+      validGradeTotal(value) {
         Assignment memory assignment = Assignment({name: name, value: value});
         assignments.push(assignment);
     }
