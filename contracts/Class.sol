@@ -21,6 +21,10 @@ contract Class is Ownable {
     Student[] public students;
     Assignment[] public assignments;
 
+    event AddedStudent(bytes32 name, address addr);
+    event AddedAssignment(uint id, bytes32 name, uint value);
+    event GradedAssignment(address addr, uint assignment, uint grade);
+
     modifier validStudent(address addr) {
         require(studentAddressToIdx[addr] != 0);
         _;
@@ -85,15 +89,20 @@ contract Class is Ownable {
         students.push(student);
         studentAddressToIdx[addr] = students.length;
 
+        emit AddedStudent(name, addr);
         return studentAddressToIdx[addr] - 1;
     }
 
     function addAssignment(bytes32 name, uint value) public
       onlyOwner
       validGrade(value)
-      validGradeTotal(value) {
+      validGradeTotal(value)
+      returns (uint) {
         Assignment memory assignment = Assignment({name: name, value: value});
         assignments.push(assignment);
+
+        emit AddedAssignment(assignments.length - 1, name, value);
+        return assignments.length - 1;
     }
 
     function gradeAssignment(address addr, uint assignment, uint grade) public
@@ -105,5 +114,7 @@ contract Class is Ownable {
 
         Student storage student = students[idx];
         student.grades[assignment] = grade;
+
+        emit GradedAssignment(addr, assignment, grade);
     }
 }
