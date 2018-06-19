@@ -21,7 +21,7 @@ contract Class is Ownable {
     Student[] public students;
     Assignment[] public assignments;
 
-    event AddedStudent(address addr, bytes32 name);
+    event AddedStudent(bytes32 name, address addr);
     event AddedAssignment(uint id, bytes32 name, uint value);
     event GradedAssignment(address addr, uint assignment, uint grade);
 
