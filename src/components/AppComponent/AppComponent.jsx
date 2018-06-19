@@ -15,8 +15,8 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
 import CircularProgress from '@material-ui/core/CircularProgress';
-import ClassContract from '../../../build/contracts/Class.json'
-import getWeb3 from '../../utils/getWeb3'
+import ClassContract from '../../../build/contracts/Class.json';
+import getWeb3 from '../../utils/getWeb3';
 
 import Integrations from '../../integration/integration';
 
@@ -32,19 +32,24 @@ class AppComponent extends React.Component {
     isSaving: false,
     activityName: '',
     activityValue: 0,
+    studentName: '',
+    studentAddress: '',
+    accounts: [],
     teacher: ''
   };
 
   componentWillMount() {
-    getWeb3.then(results => {
-      this.setState({
-        web3: results.web3
-      });
+    getWeb3
+      .then(results => {
+        this.setState({
+          web3: results.web3
+        });
 
-      this._instantiateContracts();
-    }).catch(() => {
-        console.log('Error finding web3.');
-    })
+        this._instantiateContracts(web3);
+      })
+      .catch(err => {
+        console.log('Error finding web3.', err);
+      });
   }
 
   _instantiateContracts() {
@@ -53,23 +58,38 @@ class AppComponent extends React.Component {
     classContract.setProvider(this.state.web3.currentProvider);
 
     var classContractInstance;
-
     // Get accounts.
     this.state.web3.eth.getAccounts((error, accounts) => {
-      classContract.deployed().then((instance) => {
-        classContractInstance = instance;
-        console.log(instance);
+      classContract
+        .deployed()
+        .then(instance => {
+          classContractInstance = instance;
+          this.setState({ accounts, instance });
+          // How to call view functions? console.log(instance.getStudent);
+        })
+        .catch(error => {
+          this.setState({ error });
+        });
+    });
+  }
 
-        // @Todo colocar a linha seguinte no modal de adicionar student.
-        instance.addStudent("Marzano", "0xbB77B62bda8bD4fA9375eE00F3114249eBe4AfDE", {from: accounts[0]});
+  _handleAddStudent() {
+    console.log('Adding Student');
 
-        // How to call view functions? console.log(instance.getStudent);
-      }).then((result) => {
-          // Do additional stuffs
-      }).then((result) => {
-          // Do additional stuffs
+    const { instance, accounts, studentName, studentAddress } = this.state;
+    this.setState({ isAddStudentLoading: true });
+
+    instance
+      .addStudent(studentName, studentAddress, { from: accounts[0] })
+      .then(res => {
+        console.log('Added Student Res', res);
+        this.setState({ isAddStudentLoading: false, isStudentModalOpen: false });
+        // We need to call get students again after we add a new student! //
       })
-    })
+      .catch(error => {
+        console.log('Added student Error', error);
+        this.setState({ isAddStudentLoading: false, error });
+      });
   }
 
   _getActivities(students) {
@@ -196,9 +216,9 @@ class AppComponent extends React.Component {
         >
           {!this.state.isSaving ? <div>Salvar</div> : <CircularProgress style={{ color: 'white' }} size={20} />}
         </Button>
-        <Typography variant="subheading" color="textSecondary" className={classes.contentTitle}>
+        {/* <Typography variant="subheading" color="textSecondary" className={classes.contentTitle}>
           Alunos matriculados na disciplina - 2018/2
-        </Typography>
+        </Typography> */}
       </div>
     );
   }
@@ -240,11 +260,6 @@ class AppComponent extends React.Component {
       activities: activitiesList,
       isActivityModalOpen: false
     });
-  }
-
-  _handleAddStudent() {
-    console.log('adding student', this.state.studentName);
-    this.setState({ isStudentModalOpen: false });
   }
 
   _addActitivyModal() {
@@ -307,6 +322,12 @@ class AppComponent extends React.Component {
               id="activity"
               label="Nome do Aluno"
               onChange={event => this.setState({ studentName: event.target.value })}
+            />
+            <TextField
+              className={classes.modalTextField}
+              id="activity"
+              label="Endereço do Aluno"
+              onChange={event => this.setState({ studentAddress: event.target.value })}
             />
             <div className={classes.modalFooter}>
               <Button
