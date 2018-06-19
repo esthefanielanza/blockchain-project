@@ -38,7 +38,7 @@ contract Class is Ownable {
     }
 
     modifier validGrade(uint grade) {
-        require(grade >= 0 && grade <= 100);
+        require(grade >= 0 && grade <= 10000);
         _;
     }
 
