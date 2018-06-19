@@ -57,7 +57,14 @@ contract Class is Ownable {
       validStudent(addr)
       returns (bytes32, uint[]) {
         Student storage student = students[studentAddressToIdx[addr] - 1];
-        return (student.name, student.grades);
+
+        // Grades is a mapping. We convert to array to return its' values.
+        uint[] gradesArray;
+        for (uint i = 0; i < assignments.length; i++) {
+            gradesArray.push(student.grades[i]);
+        }
+
+        return (student.name, gradesArray);
     }
 
     function addStudent(bytes32 name, address addr) public
@@ -79,11 +86,11 @@ contract Class is Ownable {
         assignments.push(assignment);
     }
 
-    function gradeAssignment(address addr, uint assignment, uint grade) public {
-      // onlyOwner
-      // validStudent(addr)
-      // validAssignment(assignment)
-      // validAssignmentGrade(assignment, grade) {
+    function gradeAssignment(address addr, uint assignment, uint grade) public
+      onlyOwner
+      validStudent(addr)
+      validAssignment(assignment)
+      validAssignmentGrade(assignment, grade) {
         uint idx = studentAddressToIdx[addr] - 1;
 
         Student storage student = students[idx];
