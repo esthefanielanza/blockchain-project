@@ -4,6 +4,7 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 contract Class is Ownable {
 
     // @todo This is a draft that needs to be worked on.
+    // @todo Add check to validAssignmentGrade to make sure sum(assignment grades) <= 100
 
     struct Student {
         address addr;
@@ -41,13 +42,14 @@ contract Class is Ownable {
     }
 
     function getStudent(address addr) public view
-      // validStudent(addr)
+      validStudent(addr)
       returns (bytes32 name, uint[] grades) {
         Student storage student = students[studentAddressToIdx[addr]];
         return (student.name, student.grades);
     }
 
-    function addStudent(bytes32 name, address addr) public onlyOwner
+    function addStudent(bytes32 name, address addr) public
+      onlyOwner
       returns (uint) {
         Student memory student;
         student.name = name;
@@ -59,7 +61,8 @@ contract Class is Ownable {
         return studentAddressToIdx[addr] - 1;
     }
 
-    function addAssignment(bytes32 name, uint value) public validGrade(value) {
+    function addAssignment(bytes32 name, uint value) public
+      validGrade(value) {
         Assignment memory assignment = Assignment({name: name, value: value});
         assignments.push(assignment);
     }
