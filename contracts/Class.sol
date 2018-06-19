@@ -17,6 +17,9 @@ contract Class is Ownable {
         uint value;
     }
 
+    bytes32 className;
+    bytes32 teacherName;
+
     mapping (address => uint) public studentAddressToIdx;
     Student[] public students;
     Assignment[] public assignments;
