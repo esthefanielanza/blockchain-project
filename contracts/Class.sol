@@ -89,7 +89,7 @@ contract Class is Ownable {
       onlyOwner
       validGrade(value)
       returns (uint) {
-        gradeTotal+= value
+        gradeTotal+= value;
         Assignment memory assignment = Assignment({name: name, value: value});
         assignments.push(assignment);
 
