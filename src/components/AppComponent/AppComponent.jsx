@@ -18,7 +18,6 @@ import CircularProgress from '@material-ui/core/CircularProgress';
 import ClassContract from '../../../build/contracts/Class.json';
 import getWeb3 from '../../utils/getWeb3';
 
-import Integrations from '../../integration/integration';
 import { rejects } from 'assert';
 
 const CN = 'app';
@@ -259,6 +258,7 @@ class AppComponent extends React.Component {
               instance
                 .students(i)
                 .then(student => {
+                  console.log('student', student);
                   const studentName = web3.toAscii(student[1]).replace(/\u0000/g, '');
                   students.push({ addr: student[0], name: studentName });
                 })
@@ -282,15 +282,27 @@ class AppComponent extends React.Component {
   }
 
   _handleSaveStudentsData() {
+    console.log('Saving data!');
     this.setState({ isSaving: true });
-    Integrations.saveStudentsData(this.state.students)
-      .then(() => {
-        console.log('Saved data!');
-        this.setState({ isSaving: false });
-      })
-      .catch(error => {
-        this.setState({ isSaving: false, error });
+
+    return new Promise((resolve, reject) => {
+      const { studentsGrades, instance, accounts } = this.state;
+      const promises = [];
+
+      Object.keys(studentsGrades).forEach(addr => {
+        studentsGrades[addr].forEach(assignment => {
+          promises.push(
+            instance.gradeAssignment(addr, web3.toBigNumber(assignment.id), web3.toBigNumber(assignment.grade), {
+              from: accounts[0]
+            })
+          );
+        });
       });
+
+      Promise.all(promises)
+        .then(resolve)
+        .catch(reject);
+    });
   }
 
   // -------------------- Handle Front Data -------------------- //
@@ -346,13 +358,14 @@ class AppComponent extends React.Component {
 
   _renderHeader() {
     const { classes } = this.props;
+    const { instance } = this.state;
 
     return [
       <div className={classes.headerContainer}>
         <CardHeader
           className={classes.cardHeader}
-          title={this.state.teacher.name}
-          subheader={this.state.teacher.subject}
+          title={instance && instance.teacherName}
+          subheader={instance && instance.className}
         />
         <img className={classes.logo} src="https://www.ufmg.br/online/arquivos/anexos/UFMG%20marca%20nova.JPG" />
       </div>,
@@ -415,7 +428,11 @@ class AppComponent extends React.Component {
             <TableHead>
               <TableRow>
                 <TableCell> Alunos </TableCell>
-                {activities.map((activity, key) => <TableCell> {activity.name} </TableCell>)}
+                {activities.map((activity, key) => (
+                  <TableCell>
+                    {activity.name} ({activity.value})
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
             <TableBody>{students.map(this._renderStudentCard.bind(this))}</TableBody>

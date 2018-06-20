@@ -25,10 +25,10 @@ contract Class is Ownable {
     Assignment[] public assignments;
     uint public gradeTotal;
 
-    //constructor(bytes32 class, bytes32 teacher) public {
-    //    className = class;
-    //    teacherName = teacher;
-    //}
+    constructor(bytes32 class, bytes32 teacher) public {
+        className = class;
+        teacherName = teacher;
+    }
 
     event AddedStudent(bytes32 name, address addr);
     event AddedAssignment(uint id, bytes32 name, uint value);

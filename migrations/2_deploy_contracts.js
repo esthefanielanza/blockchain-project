@@ -1,5 +1,5 @@
-var Class = artifacts.require("./Class.sol");
+var Class = artifacts.require('./Class.sol');
 
-module.exports = function(deployer) {
-    deployer.deploy(Class);
+module.exports = (deployer, className, teacherName) => {
+  deployer.deploy(Class, className, teacherName);
 };
