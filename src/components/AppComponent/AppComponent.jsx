@@ -27,8 +27,10 @@ class AppComponent extends React.Component {
   state = {
     students: [],
     activities: [],
+    isGettingData: false,
     isEditModeOn: false,
     isActivityModalOpen: false,
+    idAddActivityLoading: false,
     isStudentModalOpen: false,
     isSaving: false,
     activityName: '',
@@ -37,7 +39,7 @@ class AppComponent extends React.Component {
     studentAddress: '',
     accounts: [],
     teacher: '',
-    isLoadingStudents: true,
+    isLoadingList: true,
     instance: undefined
   };
 
@@ -51,7 +53,47 @@ class AppComponent extends React.Component {
         this.setState({
           web3: results.web3
         });
-        this._instantiateContracts(web3);
+        this._instantiateContracts(web3)
+          .then(() => {
+            const { instance } = this.state;
+            const addedStudentEvent = instance.AddedStudent();
+            const addedAssignmentEvent = instance.AddedAssignment();
+
+            // watch for changes
+            addedStudentEvent.watch((error, result) => {
+              if (!error && result) {
+                const students = this.state.students.slice();
+                const studentName = web3.toAscii(result.args.name).replace(/\u0000/g, '');
+                const studentAddr = result.args.addr;
+                if (!this._checkIfStudentExists(studentAddr)) {
+                  console.log('not duplicated');
+                  students.push({ addr: studentAddr, name: studentName });
+                }
+                this.setState({ isLoadingList: false, students });
+              } else {
+                this.setState({ isLoadingList: false });
+              }
+            });
+
+            addedAssignmentEvent.watch((error, result) => {
+              console.log('result assignment', result);
+              if (!error && result) {
+                const activities = this.state.activities.slice();
+                const activityName = web3.toAscii(result.args.name).replace(/\u0000/g, '');
+                const id = result.args.id.toNumber();
+                const value = result.args.value.toNumber();
+                if (!this._checkIfActivityExists()) {
+                  activities.push({ activityName, id, value });
+                }
+                this.setState({ isLoadingList: false, activities });
+              } else {
+                this.setState({ isLoadingList: false });
+              }
+            });
+          })
+          .catch(error => {
+            console.log('Initiate Contract', error);
+          });
       })
       .catch(err => {
         console.log('err', err);
@@ -62,41 +104,64 @@ class AppComponent extends React.Component {
   // -------------------- Contracts Integration -------------------- //
 
   _instantiateContracts() {
-    const contract = require('truffle-contract');
-    const classContract = contract(ClassContract);
-    classContract.setProvider(this.state.web3.currentProvider);
+    return new Promise((resolve, reject) => {
+      const contract = require('truffle-contract');
+      const classContract = contract(ClassContract);
+      classContract.setProvider(this.state.web3.currentProvider);
 
-    var classContractInstance;
-    // Get accounts.
-    console.log('getting accounts', classContract);
-    this.state.web3.eth.getAccounts((error, accounts) => {
-      console.log('got accounts', accounts);
-      classContract
-        .deployed()
-        .then(instance => {
-          console.log('Initiate Contract Success');
-          classContractInstance = instance;
-          this._getStudents(instance);
+      let classContractInstance;
+      // Get accounts.
+      console.log('getting accounts', classContract);
+      this.state.web3.eth.getAccounts((error, accounts) => {
+        console.log('got accounts', accounts);
+        classContract
+          .deployed()
+          .then(instance => {
+            console.log('Initiate Contract Success');
+            classContractInstance = instance;
 
-          var addedStudentEvent = instance.AddedStudent();
+            this.setState({ accounts, instance });
 
-          console.log('addedStudentEvent', addedStudentEvent);
-          // watch for changes
-          addedStudentEvent.watch((error, result) => {
-            if (!error && result) {
-              this._getStudents(instance);
-              console.log(error);
-            }
+            this._getStudents(instance)
+              .then(resolve)
+              .catch(reject);
+            // How to call view functions? console.log(instance.getStudent);
+          })
+          .catch(error => {
+            console.log('Initiate Contract Error', error);
+            this.setState({ error });
+            rejec();
           });
-
-          this.setState({ accounts, instance });
-          // How to call view functions? console.log(instance.getStudent);
-        })
-        .catch(error => {
-          console.log('Initiate Contract Error', error);
-          this.setState({ error });
-        });
+      });
     });
+  }
+
+  _checkIfStudentExists(addr) {
+    const students = this.state.students;
+    const studentsLength = students.length;
+    console.log('this.state.students', students);
+    console.log('addr', addr);
+    for (let i = 0; i < studentsLength; i++) {
+      console.log('student[i].addr', students[i].addr);
+      if (addr === students[i].addr) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  _checkIfActivityExists(id) {
+    const activities = this.state.activities;
+    const activitiesLength = activities.length;
+    console.log('this.state.activities', activities);
+    console.log('addr', id);
+    for (let i = 0; i < activitiesLength; i++) {
+      console.log('student[i].addr', activities[i].id);
+      if (id === activities[i].id) {
+        return true;
+      }
+    }
+    return false;
   }
 
   _handleAddStudent() {
@@ -109,12 +174,30 @@ class AppComponent extends React.Component {
       .addStudent(studentName, studentAddress, { from: accounts[0] })
       .then(res => {
         console.log('Added Student Res', res);
-        this.setState({ isAddStudentLoading: false, isStudentModalOpen: false, isLoadingStudents: true });
+        this.setState({ isAddStudentLoading: false, isStudentModalOpen: false, isLoadingList: true });
         // We need to call get students again after we add a new student! //
       })
       .catch(error => {
         console.log('Added student Error', error);
         this.setState({ isAddStudentLoading: false, error });
+      });
+  }
+
+  _handleAddActivity() {
+    console.log('Adding Activity');
+
+    const { instance, accounts, activityName, activityValue } = this.state;
+    this.setState({ isAddingActivity: true });
+
+    instance
+      .addAssignment(activityName, activityValue, { from: accounts[0] })
+      .then(res => {
+        console.log('Added activity res', res);
+        this.setState({ isActivityModalOpen: false, isAddingActivity: false, isLoadingList: true });
+      })
+      .catch(error => {
+        console.log('Added activity error', error);
+        this.setState({ isActivityModalOpen: false, isAddingActivity: false, error });
       });
   }
 
@@ -164,26 +247,6 @@ class AppComponent extends React.Component {
   }
 
   // -------------------- Handle Front Data -------------------- //
-
-  _handleAddActivity() {
-    const { activityName, activityValue, students, activities } = this.state;
-    const studentsList = students.slice();
-    const activitiesList = activities.slice();
-
-    studentsList.map(student => {
-      const newStudent = Object.assign({}, student);
-      newStudent.grades && newStudent.grades.push({ title: activityName, grade: 0, value: activityValue });
-      return newStudent;
-    });
-
-    activitiesList.push(activityName);
-
-    this.setState({
-      students: studentsList,
-      activities: activitiesList,
-      isActivityModalOpen: false
-    });
-  }
 
   // -------------------- Render Functions -------------------- //
 
@@ -274,9 +337,9 @@ class AppComponent extends React.Component {
 
   _renderTable() {
     const { classes } = this.props;
-    const { students, activities, isLoadingStudents } = this.state;
+    const { students, activities, isLoadingList } = this.state;
 
-    if (isLoadingStudents) {
+    if (isLoadingList) {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <CircularProgress style={{ color: green[500] }} size={200} />
@@ -391,6 +454,7 @@ class AppComponent extends React.Component {
 
   _getStudents(instance) {
     console.log('GETTING STUDENTS!!!!');
+    this.setState({ isGettingData: true });
     return new Promise((resolve, reject) => {
       const promises = [];
       const students = [];
@@ -404,7 +468,7 @@ class AppComponent extends React.Component {
                 .students(i)
                 .then(student => {
                   const studentName = web3.toAscii(student[1]).replace(/\u0000/g, '');
-                  students.push({ address: student[0], name: studentName });
+                  students.push({ addr: student[0], name: studentName });
                 })
                 .catch(error => {
                   this.setState({ error });
@@ -416,7 +480,7 @@ class AppComponent extends React.Component {
           Promise.all(promises)
             .then(() => {
               console.log('GOT ALL STUDENTS!!!');
-              this.setState({ students, isLoadingStudents: false });
+              this.setState({ students, isLoadingList: false });
               resolve();
             })
             .catch(reject);
