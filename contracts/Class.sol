@@ -75,9 +75,9 @@ contract Class is Ownable {
         Student storage student = students[studentAddressToIdx[addr] - 1];
 
         // Grades is a mapping. We convert to array to return its' values.
-        uint[] gradesArray;
+        uint[] memory gradesArray = new uint[](assignments.length);
         for (uint i = 0; i < assignments.length; i++) {
-            gradesArray.push(student.grades[i]);
+            gradesArray[i] = student.grades[i];
         }
 
         return (student.name, gradesArray);
