@@ -38,7 +38,9 @@ class AppComponent extends React.Component {
     studentName: '',
     studentAddress: '',
     accounts: [],
-    teacher: '',
+    teacherName: '',
+    className: '',
+    resetTable: false,
     isLoadingList: true,
     instance: undefined
   };
@@ -48,7 +50,6 @@ class AppComponent extends React.Component {
   componentDidMount() {
     getWeb3
       .then(results => {
-        console.log('results', results);
         this.setState({
           web3: results.web3
         });
@@ -57,15 +58,21 @@ class AppComponent extends React.Component {
             const { instance } = this.state;
             const addedStudentEvent = instance.AddedStudent();
             const addedAssignmentEvent = instance.AddedAssignment();
+            const gradedAssignmentEvent = instance.GradedAssignment();
 
             // watch for changes
             addedStudentEvent.watch((error, result) => {
               if (!error && result) {
                 const students = this.state.students.slice();
+                const studentGrades = Object.assign({}, this.state.studentsGrades);
                 const studentName = web3.toAscii(result.args.name).replace(/\u0000/g, '');
                 const studentAddr = result.args.addr;
                 if (!this._checkIfStudentExists(studentAddr)) {
                   students.push({ addr: studentAddr, name: studentName });
+                  studentGrades[studentAddr] = [];
+                  activities.forEach(activity => {
+                    studentGrades[studentAddr][activity.id] = 0;
+                  });
                 }
                 this.setState({ isLoadingList: false, students });
               } else {
@@ -73,17 +80,37 @@ class AppComponent extends React.Component {
               }
             });
 
+            gradedAssignmentEvent.watch((error, result) => {
+              if (!error && result && this.state.resetTable) {
+                this._getStudents(instance)
+                  .then(() => {
+                    this._getActivities(instance);
+                    this.setState({ isSaving: false });
+                  })
+                  .catch(() => 'Error on update table');
+              } else {
+                this.setState({ isLoadingList: false });
+              }
+            });
+
             addedAssignmentEvent.watch((error, result) => {
-              console.log('result assignment', result);
               if (!error && result) {
                 const activities = this.state.activities.slice();
+                const studentGrades = Object.assign({}, this.state.studentsGrades);
                 const name = web3.toAscii(result.args.name).replace(/\u0000/g, '');
                 const id = result.args.id.toNumber();
                 const value = result.args.value.toNumber();
                 if (!this._checkIfActivityExists(id)) {
                   activities.push({ name, id, value });
+                  Object.keys(studentGrades).forEach(key => {
+                    studentGrades[key][id] = {
+                      name,
+                      id,
+                      value
+                    };
+                  });
                 }
-                this.setState({ isLoadingList: false, activities });
+                this.setState({ isLoadingList: false, activities, studentGrades });
               } else {
                 this.setState({ isLoadingList: false });
               }
@@ -94,7 +121,6 @@ class AppComponent extends React.Component {
           });
       })
       .catch(err => {
-        console.log('err', err);
         console.log('Error finding web3.', err);
       });
   }
@@ -109,17 +135,15 @@ class AppComponent extends React.Component {
 
       let classContractInstance;
       // Get accounts.
-      console.log('getting accounts', classContract);
       this.state.web3.eth.getAccounts((error, accounts) => {
-        console.log('got accounts', accounts);
         classContract
           .deployed()
           .then(instance => {
-            console.log('Initiate Contract Success');
+            console.log('Initiate Contract Success', instance);
             classContractInstance = instance;
 
             this.setState({ accounts, instance });
-
+            this._getTeacherData(instance);
             this._getStudents(instance)
               .then(() => {
                 this._getActivities(instance)
@@ -142,10 +166,8 @@ class AppComponent extends React.Component {
   _checkIfStudentExists(addr) {
     const students = this.state.students;
     const studentsLength = students.length;
-    console.log('this.state.students', students);
-    console.log('addr', addr);
+
     for (let i = 0; i < studentsLength; i++) {
-      console.log('student[i].addr', students[i].addr);
       if (addr === students[i].addr) {
         return true;
       }
@@ -156,10 +178,8 @@ class AppComponent extends React.Component {
   _checkIfActivityExists(id) {
     const activities = this.state.activities;
     const activitiesLength = activities.length;
-    console.log('this.state.activities', activities);
-    console.log('addr', id);
+
     for (let i = 0; i < activitiesLength; i++) {
-      console.log('student[i].addr', activities[i].id);
       if (id === activities[i].id) {
         return true;
       }
@@ -168,15 +188,12 @@ class AppComponent extends React.Component {
   }
 
   _handleAddStudent() {
-    console.log('Adding Student');
-
     const { instance, accounts, studentName, studentAddress } = this.state;
     this.setState({ isAddStudentLoading: true });
 
     instance
       .addStudent(studentName, studentAddress, { from: accounts[0] })
       .then(res => {
-        console.log('Added Student Res', res);
         this.setState({ isAddStudentLoading: false, isStudentModalOpen: false, isLoadingList: true });
         // We need to call get students again after we add a new student! //
       })
@@ -187,15 +204,12 @@ class AppComponent extends React.Component {
   }
 
   _handleAddActivity() {
-    console.log('Adding Activity');
-
     const { instance, accounts, activityName, activityValue } = this.state;
     this.setState({ isAddingActivity: true });
 
     instance
       .addAssignment(activityName, activityValue, { from: accounts[0] })
       .then(res => {
-        console.log('Added activity res', res);
         this.setState({ isActivityModalOpen: false, isAddingActivity: false, isLoadingList: true });
       })
       .catch(error => {
@@ -205,7 +219,6 @@ class AppComponent extends React.Component {
   }
 
   _getActivities(instance) {
-    console.log('GETTING Activities!!!!');
     this.setState({ isGettingData: true });
     return new Promise((resolve, reject) => {
       const promises = [];
@@ -219,7 +232,6 @@ class AppComponent extends React.Component {
               instance
                 .assignments(i)
                 .then(assignment => {
-                  console.log('ASSIGNMENT!', assignment);
                   const name = web3.toAscii(assignment[0]).replace(/\u0000/g, '');
                   const value = assignment[1].toNumber();
                   activities.push({ name, id: i, value });
@@ -233,7 +245,6 @@ class AppComponent extends React.Component {
 
           Promise.all(promises)
             .then(() => {
-              console.log('GOT ALL ACTIVITIES!!!');
               this.setState({ activities, isLoadingList: false });
               resolve();
             })
@@ -243,12 +254,31 @@ class AppComponent extends React.Component {
     });
   }
 
+  _getTeacherData(instance) {
+    instance
+      .teacherName()
+      .then(data => {
+        const teacherName = web3.toAscii(data).replace(/\u0000/g, '');
+        this.setState({ teacherName });
+      })
+      .catch(error => {
+        console.log('Error while getting teacher name', error);
+      });
+    instance
+      .className()
+      .then(data => {
+        const className = web3.toAscii(data).replace(/\u0000/g, '');
+        this.setState({ className });
+      })
+      .catch(error => console.log('Error while getting class name', error));
+  }
+
   _getStudents(instance) {
-    console.log('GETTING STUDENTS!!!!');
     this.setState({ isGettingData: true });
     return new Promise((resolve, reject) => {
       const promises = [];
       const students = [];
+      const studentsGrades = {};
 
       instance
         .getNumberOfStudents()
@@ -258,49 +288,66 @@ class AppComponent extends React.Component {
               instance
                 .students(i)
                 .then(student => {
-                  console.log('student', student);
-                  const studentName = web3.toAscii(student[1]).replace(/\u0000/g, '');
-                  students.push({ addr: student[0], name: studentName });
+                  instance
+                    .getStudent(student[0])
+                    .then(data => {
+                      const studentName = web3.toAscii(student[1]).replace(/\u0000/g, '');
+                      students.push({ addr: student[0], name: studentName });
+                      for (let j = 0; j < data[1].length; j++) {
+                        if (studentsGrades[student[0]] === undefined) {
+                          studentsGrades[student[0]] = [];
+                        }
+                        studentsGrades[student[0]][j] = {
+                          grade: data[1][j].toNumber(),
+                          id: j
+                        };
+                      }
+                    })
+                    .catch(err => console.log('err', err));
                 })
                 .catch(error => {
                   this.setState({ error });
-                  console.log('Get Student Error', error);
+                  console.log('Student Error', error);
                 })
             );
           }
 
           Promise.all(promises)
             .then(() => {
-              console.log('GOT ALL STUDENTS!!!');
-              this.setState({ students, isLoadingList: false });
+              this.setState({ students, studentsGrades, isLoadingList: false, resetTable: false });
               resolve();
             })
-            .catch(reject);
+            .catch(err => {
+              console.log('Promise all error', error);
+              reject();
+            });
         })
         .catch(error => this.setState({ error }));
     });
   }
 
   _handleSaveStudentsData() {
-    console.log('Saving data!');
     this.setState({ isSaving: true });
 
     return new Promise((resolve, reject) => {
       const { studentsGrades, instance, accounts } = this.state;
       const promises = [];
-
       Object.keys(studentsGrades).forEach(addr => {
         studentsGrades[addr].forEach(assignment => {
           promises.push(
-            instance.gradeAssignment(addr, web3.toBigNumber(assignment.id), web3.toBigNumber(assignment.grade), {
-              from: accounts[0]
-            })
+            instance
+              .gradeAssignment(addr, web3.toBigNumber(assignment.id), web3.toBigNumber(assignment.grade), {
+                from: accounts[0]
+              })
+              .catch(err => console.log('Error while saving grade', err))
           );
         });
       });
 
       Promise.all(promises)
-        .then(resolve)
+        .then(() => {
+          this.setState({ resetTable: true });
+        })
         .catch(reject);
     });
   }
@@ -310,13 +357,15 @@ class AppComponent extends React.Component {
     const studentsGrades = Object.assign({}, this.state.studentsGrades);
     const newGrade = {
       name: activityName,
-      grade: grade
+      grade: grade,
+      id: activityId
     };
 
     if (studentsGrades[studentAddr]) {
       studentsGrades[studentAddr][activityId] = newGrade;
     } else {
-      studentsGrades[studentAddr] = [newGrade];
+      studentsGrades[studentAddr] = [];
+      studentsGrades[studentAddr][activityId] = newGrade;
     }
 
     this.setState({ studentsGrades });
@@ -340,13 +389,13 @@ class AppComponent extends React.Component {
   _renderStudentGrades(studentAddr) {
     const { classes } = this.props;
     const grades = this.state.activities;
-
     return grades.map(grade => {
+      const studentGrade = this.state.studentsGrades[studentAddr][grade.id].grade;
       return (
         <TableCell key={grade.id}>
           <TextField
+            value={studentGrade === undefined ? '0' : studentGrade}
             disabled={!this.state.isEditModeOn}
-            label={grade.name}
             onChange={event => {
               this._changeStudeGrade(event.target.value, grade.name, grade.id, studentAddr);
             }}
@@ -362,11 +411,7 @@ class AppComponent extends React.Component {
 
     return [
       <div className={classes.headerContainer}>
-        <CardHeader
-          className={classes.cardHeader}
-          title={instance && instance.teacherName}
-          subheader={instance && instance.className}
-        />
+        <CardHeader className={classes.cardHeader} title={this.state.teacherName} subheader={this.state.className} />
         <img className={classes.logo} src="https://www.ufmg.br/online/arquivos/anexos/UFMG%20marca%20nova.JPG" />
       </div>,
       <div className={classes.line} />
@@ -421,7 +466,6 @@ class AppComponent extends React.Component {
         </div>
       );
     } else {
-      console.log('this.state.activities', this.state.activities);
       return (
         <Paper className={classes.tableWrapper}>
           <Table>
@@ -533,7 +577,6 @@ class AppComponent extends React.Component {
   }
 
   render() {
-    console.log('render');
     const { classes } = this.props;
 
     return (
