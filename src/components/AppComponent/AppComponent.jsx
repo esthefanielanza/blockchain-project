@@ -27,6 +27,7 @@ class AppComponent extends React.Component {
     students: [],
     studentsGrades: {},
     activities: [],
+    accountError: false,
     isGettingData: false,
     isEditModeOn: false,
     isActivityModalOpen: false,
@@ -136,6 +137,9 @@ class AppComponent extends React.Component {
       let classContractInstance;
       // Get accounts.
       this.state.web3.eth.getAccounts((error, accounts) => {
+        if (accounts.length === 0){
+          this.setState({ accountError : true });
+        }
         classContract
           .deployed()
           .then(instance => {
@@ -457,9 +461,13 @@ class AppComponent extends React.Component {
 
   _renderTable() {
     const { classes } = this.props;
-    const { students, activities, isLoadingList } = this.state;
-
-    if (isLoadingList) {
+    const { students, activities, isLoadingList, accountError } = this.state;
+    if(accountError){
+      return (
+        <label text='Lembre-se de desbloquear seu MetaMask antes de carregar a página' />
+      );
+    }
+    else if (isLoadingList) {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <CircularProgress style={{ color: green[500] }} size={200} />
