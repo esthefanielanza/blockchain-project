@@ -337,15 +337,14 @@ class AppComponent extends React.Component {
       const { studentsGrades, instance, accounts } = this.state;
       const promises = [];
       Object.keys(studentsGrades).forEach(addr => {
-        studentsGrades[addr].forEach(assignment => {
+          const studentGrades = studentsGrades[addr].map(assignment => assignment.grade*100);
           promises.push(
-            instance
-              .gradeAssignment(addr, web3.toBigNumber(assignment.id), web3.toBigNumber(assignment.grade*100), {
-                from: accounts[0]
+              instance
+              .gradeAssignments(addr, studentGrades, {
+                  from: accounts[0]
               })
-              .catch(err => console.log('Error while saving grade', err))
+              .catch(err => console.log('Error while saving grades for student', err))
           );
-        });
       });
 
       Promise.all(promises)
