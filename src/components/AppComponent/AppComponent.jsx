@@ -1,6 +1,7 @@
 import React from 'react';
 import Button from '@material-ui/core/Button';
 import Card from '@material-ui/core/Card';
+import CardMedia from '@material-ui/core/CardMedia';
 import CardContent from '@material-ui/core/CardContent';
 import CardHeader from '@material-ui/core/CardHeader';
 import AddIcon from '@material-ui/icons/Add';
@@ -27,7 +28,7 @@ class AppComponent extends React.Component {
     students: [],
     studentsGrades: {},
     activities: [],
-    accountError: false,
+    accountError: true,
     isGettingData: false,
     isEditModeOn: false,
     isActivityModalOpen: false,
@@ -137,9 +138,10 @@ class AppComponent extends React.Component {
       let classContractInstance;
       // Get accounts.
       this.state.web3.eth.getAccounts((error, accounts) => {
-        if (accounts.length === 0){
-          this.setState({ accountError : true });
+        if (accounts.length !== 0){
+          this.setState({ accountError: false });
         }
+
         classContract
           .deployed()
           .then(instance => {
@@ -155,13 +157,11 @@ class AppComponent extends React.Component {
                   .catch(reject);
               })
               .catch(reject);
-
-            // How to call view functions? console.log(instance.getStudent);
           })
           .catch(error => {
             console.log('Initiate Contract Error', error);
             this.setState({ error });
-            rejec();
+            reject();
           });
       });
     });
@@ -461,13 +461,8 @@ class AppComponent extends React.Component {
 
   _renderTable() {
     const { classes } = this.props;
-    const { students, activities, isLoadingList, accountError } = this.state;
-    if(accountError){
-      return (
-        <label text='Lembre-se de desbloquear seu MetaMask antes de carregar a página' />
-      );
-    }
-    else if (isLoadingList) {
+    const { students, activities, isLoadingList } = this.state;
+    if (isLoadingList) {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <CircularProgress style={{ color: green[500] }} size={200} />
@@ -586,32 +581,51 @@ class AppComponent extends React.Component {
 
   render() {
     const { classes } = this.props;
+    const { accountError } = this.state;
 
-    return (
-      <div className={classes.root}>
-        <div className={classes.container}>
-          <Card className={classes.card}>
-            {this._renderHeader()}
-            {this._renderSubHeader()}
-            <CardContent className={classes.cardContent}>{this._renderTable()}</CardContent>
-          </Card>
-        </div>
-        <Button
-          className={classes.fabButton}
-          variant="fab"
-          color="primary"
-          aria-label="Adicionar Aluno"
-          onClick={() => {
-            this.setState({ isStudentModalOpen: true });
-          }}
-        >
-          <AddIcon />
-        </Button>
+    if (accountError) {
+      return (
+          <div className={classes.root}>
+            <div className={classes.container}>
+              <Card className={classes.card}>
+                  {this._renderHeader()}
+                  <CardContent className={classes.cardContent}>
+                      <Typography variant="headline" component="h2">
+                      MetaMask Locked
+                      </Typography>
+                      Por favor desbloqueie seu MetaMask para interagir com a aplicação.
+                  </CardContent>
+              </Card>
+            </div>
+          </div>
+      );
+    } else {
+        return (
+          <div className={classes.root}>
+            <div className={classes.container}>
+              <Card className={classes.card}>
+                {this._renderHeader()}
+                {this._renderSubHeader()}
+                <CardContent className={classes.cardContent}>{this._renderTable()}</CardContent>
+              </Card>
+            </div>
+            <Button
+              className={classes.fabButton}
+              variant="fab"
+              color="primary"
+              aria-label="Adicionar Aluno"
+              onClick={() => {
+                this.setState({ isStudentModalOpen: true });
+              }}
+            >
+              <AddIcon />
+            </Button>
 
-        {this._renderAddActitivyModal()}
-        {this._renderAddStudentModal()}
-      </div>
-    );
+            {this._renderAddActitivyModal()}
+            {this._renderAddStudentModal()}
+          </div>
+        );
+    }
   }
 }
 

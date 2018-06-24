@@ -111,6 +111,14 @@ contract Class is Ownable {
         return assignments.length - 1;
     }
 
+    function gradeAssignments(address addr, uint[] grades) public
+      onlyOwner
+      validStudent(addr) {
+        for (uint i = 0; i < grades.length; i++) {
+            gradeAssignment(addr, i, grades[i]);
+        }
+    }
+
     function gradeAssignment(address addr, uint assignment, uint grade) public
       onlyOwner
       validStudent(addr)
