@@ -86,7 +86,7 @@ class AppComponent extends React.Component {
               if (!error && result && this.state.resetTable) {
                 this._getStudents(instance)
                   .then(() => {
-                    this._getActivities(instance);
+                    this._getAssignments(instance);
                     this.setState({ isSaving: false });
                   })
                   .catch(() => 'Error on update table');
@@ -152,7 +152,7 @@ class AppComponent extends React.Component {
             this._getTeacherData(instance);
             this._getStudents(instance)
               .then(() => {
-                this._getActivities(instance)
+                this._getAssignments(instance)
                   .then(resolve)
                   .catch(reject);
               })
@@ -222,7 +222,7 @@ class AppComponent extends React.Component {
       });
   }
 
-  _getActivities(instance) {
+  _getAssignments(instance) {
     this.setState({ isGettingData: true });
     return new Promise((resolve, reject) => {
       const promises = [];
@@ -237,7 +237,7 @@ class AppComponent extends React.Component {
                 .assignments(i)
                 .then(assignment => {
                   const name = web3.toAscii(assignment[0]).replace(/\u0000/g, '');
-                  const value = assignment[1].toNumber();
+                  const value = assignment[1].toNumber()/100;
                   activities.push({ name, id: i, value });
                 })
                 .catch(error => {
@@ -302,7 +302,7 @@ class AppComponent extends React.Component {
                           studentsGrades[student[0]] = [];
                         }
                         studentsGrades[student[0]][j] = {
-                          grade: data[1][j].toNumber(),
+                          grade: data[1][j].toNumber()/100,
                           id: j
                         };
                       }
@@ -340,7 +340,7 @@ class AppComponent extends React.Component {
         studentsGrades[addr].forEach(assignment => {
           promises.push(
             instance
-              .gradeAssignment(addr, web3.toBigNumber(assignment.id), web3.toBigNumber(assignment.grade), {
+              .gradeAssignment(addr, web3.toBigNumber(assignment.id), web3.toBigNumber(assignment.grade*100), {
                 from: accounts[0]
               })
               .catch(err => console.log('Error while saving grade', err))
