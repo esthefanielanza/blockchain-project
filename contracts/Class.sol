@@ -19,15 +19,17 @@ contract Class is Ownable {
 
     bytes32 public className;
     bytes32 public teacherName;
+    uint public classHour;
 
     mapping (address => uint) public studentAddressToIdx;
     Student[] public students;
     Assignment[] public assignments;
     uint public gradeTotal;
 
-    constructor(bytes32 class, bytes32 teacher) public {
+    constructor(bytes32 class, bytes32 teacher, uint classH) public {
         className = class;
         teacherName = teacher;
+        classHour = classH;
     }
 
     event AddedStudent(bytes32 name, address addr);
@@ -76,7 +78,7 @@ contract Class is Ownable {
 
         // Grades is a mapping. We convert to array to return its' values.
         uint[] memory gradesArray = new uint[](assignments.length);
-        for (uint i = 0; i < assignments.length; i++) {
+        for (uint i = 1; i < assignments.length; i++) {
             gradesArray[i] = student.grades[i];
         }
 
@@ -90,9 +92,13 @@ contract Class is Ownable {
         Student memory student;
         student.name = name;
         student.addr = addr;
-
         students.push(student);
         studentAddressToIdx[addr] = students.length;
+        if(assignments.length == 0){
+            //TODO: Mudar esse 60 aqui pro classHour quando for poder criar classe
+            addAssignment('Faltas', 60);
+        }
+           
 
         emit AddedStudent(name, addr);
         return studentAddressToIdx[addr] - 1;
