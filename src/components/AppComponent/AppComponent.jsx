@@ -101,7 +101,7 @@ class AppComponent extends React.Component {
                 const studentGrades = Object.assign({}, this.state.studentsGrades);
                 const name = web3.toAscii(result.args.name).replace(/\u0000/g, '');
                 const id = result.args.id.toNumber();
-                const value = result.args.value.toNumber();
+                const value = result.args.value.toNumber()/100;
                 if (!this._checkIfActivityExists(id)) {
                   activities.push({ name, id, value });
                   Object.keys(studentGrades).forEach(key => {
