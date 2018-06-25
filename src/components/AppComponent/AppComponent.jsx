@@ -672,7 +672,7 @@ const styles = theme => ({
   },
   card: {
     width: '90%',
-    minHeight: '800px'
+    minHeight: '500px'
   },
   cardHeader: {
     marginBottom: '10px'
