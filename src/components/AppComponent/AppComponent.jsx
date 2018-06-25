@@ -212,7 +212,7 @@ class AppComponent extends React.Component {
     this.setState({ isAddingActivity: true });
 
     instance
-      .addAssignment(activityName, activityValue, { from: accounts[0] })
+      .addAssignment(activityName, activityValue*100, { from: accounts[0] })
       .then(res => {
         this.setState({ isActivityModalOpen: false, isAddingActivity: false, isLoadingList: true });
       })
