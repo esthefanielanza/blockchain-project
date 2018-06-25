@@ -149,7 +149,7 @@ class AppComponent extends React.Component {
             classContractInstance = instance;
 
             this.setState({ accounts, instance });
-            this._getTeacherData(instance);
+            this._getClassData(instance);
             this._getStudents(instance)
               .then(() => {
                 this._getAssignments(instance)
@@ -258,7 +258,7 @@ class AppComponent extends React.Component {
     });
   }
 
-  _getTeacherData(instance) {
+  _getClassData(instance) {
     instance
       .teacherName()
       .then(data => {
@@ -356,7 +356,7 @@ class AppComponent extends React.Component {
   }
 
   // -------------------- Handle Front Data -------------------- //
-  _changeStudeGrade(grade, activityName, activityId, studentAddr) {
+  _changeStudentGrade(grade, activityName, activityId, studentAddr) {
     const studentsGrades = Object.assign({}, this.state.studentsGrades);
     const newGrade = {
       name: activityName,
@@ -400,7 +400,7 @@ class AppComponent extends React.Component {
             value={studentGrade === undefined ? '0' : studentGrade}
             disabled={!this.state.isEditModeOn}
             onChange={event => {
-              this._changeStudeGrade(event.target.value, grade.name, grade.id, studentAddr);
+              this._changeStudentGrade(event.target.value, grade.name, grade.id, studentAddr);
             }}
           />
         </TableCell>
