@@ -3,9 +3,6 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 contract Class is Ownable {
 
-    // @todo This is a draft that needs to be worked on.
-    // @todo Make sure all teacher methods have onlyOwner!!!
-
     struct Student {
         address addr;
         bytes32 name;
@@ -30,6 +27,9 @@ contract Class is Ownable {
         className = class;
         teacherName = teacher;
         classHour = classH;
+
+        Assignment memory faltas = Assignment({name: 'Faltas', value: classH});
+        assignments.push(faltas);
     }
 
     event AddedStudent(bytes32 name, address addr);
@@ -94,11 +94,6 @@ contract Class is Ownable {
         student.addr = addr;
         students.push(student);
         studentAddressToIdx[addr] = students.length;
-        if(assignments.length == 0){
-            //TODO: Mudar esse 60 aqui pro classHour quando for poder criar classe
-            addAssignment('Faltas', 60);
-        }
-           
 
         emit AddedStudent(name, addr);
         return studentAddressToIdx[addr] - 1;
