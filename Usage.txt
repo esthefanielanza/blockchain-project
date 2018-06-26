@@ -1,0 +1,10 @@
+Para usar o programa:
+
+
+Os comandos devem ser executados de dentro do diretório onde se encontra este arquivo.
+
+1 - truffle develop
+	dentro do console: migrate --reset
+2 - Setar o metamask com o mnemonico gerado pelo truffle develop
+3 - em outro terminal npm start
+4 - acessar o app em localhost:8080
